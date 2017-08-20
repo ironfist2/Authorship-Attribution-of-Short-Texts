@@ -5,3 +5,4 @@ Requirements:
   2. Pandas
   3. Keras
   4. Sklearn
+To run Just run command python3 main.py in the folder.
