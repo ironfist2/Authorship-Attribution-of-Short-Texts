@@ -1,6 +1,5 @@
 from __future__ import print_function
 from __future__ import division
-import json
 import datetime
 import pandas as pd
 import numpy as np
@@ -11,11 +10,6 @@ from sklearn.cross_validation import train_test_split
 np.random.seed(0)
 
 subset = None
-
-#Whether to save model parameters
-save = False
-model_name_path = 'crepe_model.json'
-model_weights_path = 'crepe_model_weights.h5'
 
 #Maximum length. Longer gets chopped. Shorter gets padded.
 maxlen = 140
@@ -60,8 +54,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, Y, random_state=1)
 print('Build model...')
 model = predict_def.model(filter_kernels, dense_outputs, maxlen, vocab_size,
                        nb_filter, cat_output)
-
-print('Fit model...')
+#model = predict_def.model2(filter_kernels, dense_outputs, maxlen, vocab_size,
+#                       nb_filter, cat_output)      For Charater Embedding use this model and change encoding function in predict_def
+print('Fit model...') 
 initial = datetime.datetime.now()
 print (len(X_test), len(y_test))
 
