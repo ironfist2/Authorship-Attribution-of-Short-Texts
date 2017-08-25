@@ -60,7 +60,48 @@ def model(filter_kernels, dense_outputs, maxlen, vocab_size, nb_filter,
                   metrics=['accuracy'])
 
     return model
+def model2(filter_kernels, dense_outputs, maxlen, vocab_size, nb_filter,
+          cat_output):                                                  # For Character Embedding use this model instead of above model
+    d = 300             #Embedding Size
+    Embedding_layer  = Embedding(vocab_size+1, d, input_length=maxlen)
+    inputs = Input(shape=(maxlen,), name='input', dtype='float32')
+    embed = Embedding_layer(inputs)
+    conv = Convolution1D(nb_filter=nb_filter, filter_length=filter_kernels[0],
+                             border_mode='valid', activation='relu',
+                             input_shape=(maxlen, d))(embed)
+    conv = MaxPooling1D(pool_length=3)(conv)
 
+    conv1 = Convolution1D(nb_filter=nb_filter, filter_length=filter_kernels[1],
+                          border_mode='valid', activation='relu')(conv)
+    conv1 = MaxPooling1D(pool_length=3)(conv1)
+
+    conv2 = Convolution1D(nb_filter=nb_filter, filter_length=filter_kernels[2],
+                          border_mode='valid', activation='relu')(conv1)
+
+    # conv3 = Convolution1D(nb_filter=nb_filter, filter_length=filter_kernels[3],
+    #                       border_mode='valid', activation='relu')(conv2)
+
+    # conv4 = Convolution1D(nb_filter=nb_filter, filter_length=filter_kernels[4],
+    #                       border_mode='valid', activation='relu')(conv3)
+
+    # conv5 = Convolution1D(nb_filter=nb_filter, filter_length=filter_kernels[5],---------
+    #                       border_mode='valid', activation='relu')(conv4)
+    conv5 = MaxPooling1D(pool_length=3)(conv2)
+    conv = Flatten()(conv)
+
+    #Two dense layers with dropout of .5
+    z = Dropout(0.5)(Dense(dense_outputs, activation='relu')(conv))
+    # z = Dropout(0.5)(Dense(dense_outputs, activation='relu')(z))
+
+    pred = Dense(cat_output, activation='softmax', name='output')(z)
+
+    model = Model(input=inputs, output=pred)
+
+    sgd = SGD(lr=0.001, momentum=0.9)
+    model.compile(loss='categorical_crossentropy', optimizer=sgd,
+                  metrics=['accuracy'])
+
+    return model
 def mini_batch_generator(x, y, vocab, vocab_size, vocab_check, maxlen,
                          batch_size=128):
 
@@ -70,7 +111,8 @@ def mini_batch_generator(x, y, vocab, vocab_size, vocab_check, maxlen,
 
         input_data = encode_data(x_sample, maxlen, vocab, vocab_size,
                                  vocab_check)
-
+        #input_data = encode_data2(x_sample, maxlen, vocab, vocab_size,
+                                 vocab_check)
         yield (input_data, y_sample)
 
 def encode_data(x, maxlen, vocab, vocab_size, check):
@@ -93,7 +135,25 @@ def encode_data(x, maxlen, vocab, vocab_size, check):
         input_data[dix, :, :] = sent_array
 
     return input_data
+def encode_data2(x, maxlen, vocab, vocab_size, check):              # For character embedding use this function instead of encode_data
 
+    input_data = np.zeros((len(x), maxlen))
+    for dix, sent in enumerate(x):
+        counter = 0
+        chars = list(sent.lower().replace(" ", ""))
+        chars2 = []
+        for i in range(len(chars)-1):
+            chars2.append(chars[i] + chars[i+1])
+        for i,c in enumerate(chars2):
+            if counter >= maxlen:
+                pass
+            else:
+                if c in check:
+                    counter += 1
+                    ix = vocab[c]
+                    input_data[dix,counter-1] = ix
+
+    return input_data
 def shuffle_matrix(x, y):
     print (x.shape, y.shape)
     stacked = np.hstack((np.matrix(x), y))
